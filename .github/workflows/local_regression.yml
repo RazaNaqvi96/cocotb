@@ -1,0 +1,92 @@
+# Copyright cocotb contributors
+# Licensed under the Revised BSD License, see LICENSE for details.
+# SPDX-License-Identifier: BSD-3-Clause
+name: local_reg
+
+on:
+  push:
+    branches:
+      - local
+      - 'stable/**'
+
+jobs:
+
+  lint-whitespace:
+    runs-on: self-hosted
+    name: whitespace
+    steps:
+    - uses: actions/checkout@v2
+    - name: whitespace
+      run: |
+        ! git --no-pager grep --color --line-number --full-name --extended-regexp -I '\s+$'
+  lint-flake8:
+    runs-on: self-hosted
+    name: flake8
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.9]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{matrix.python-version}}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{matrix.python-version}}
+    - name: flake8
+      run: |
+        pip install flake8
+        flake8
+  clang-format-lint:
+    runs-on: self-hosted
+    name: clang-format
+    steps:
+    - uses: actions/checkout@v2
+    - uses: DoozyX/clang-format-lint-action@v0.11
+      with:
+        source: '.'
+        extensions: 'h,cpp'
+        clangFormatVersion: 10
+        exclude: './cocotb/share/include/*user*.h ./examples'
+
+  tests:
+
+    name: self-hosted regression
+    runs-on: self-hosted
+    env:
+      SIM: 'icarus'
+      TOPLEVEL_LANG: 'verilog'
+      CXX: 'g++'
+      CC: 'gcc'
+      PYTHON_VERSION: ${{matrix.python-version}}
+      TOX_TESTENV_PASSENV: GITHUB_ACTIONS
+
+    
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+      # Ubuntu / MacOS Testing
+    - name: Install cocotb build dependencies (Ubuntu - g++)
+     
+      run: |
+        sudo apt install g++
+    - name: Install cocotb build dependencies (Ubuntu - clang++)
+     
+      run: |
+        sudo apt install clang
+    - name: Install cocotb build dependencies (MacOS)
+      
+      run: |
+        g++ --version
+    - name: Install Python testing dependencies (Ubuntu, MacOS)
+      
+      run: |
+        pip install tox tox-gh-actions
+    - name: Test (Ubuntu, MacOS)
+      id: unixtesting
+     
+      continue-on-error: ${{matrix.may_fail || false}}
+      timeout-minutes: 15
+      run: |
+        tox
