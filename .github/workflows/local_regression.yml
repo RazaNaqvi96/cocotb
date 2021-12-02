@@ -19,6 +19,7 @@ jobs:
     - name: whitespace
       run: |
         ! git --no-pager grep --color --line-number --full-name --extended-regexp -I '\s+$'
+        
   lint-flake8:
     runs-on: self-hosted
     name: flake8
@@ -32,6 +33,7 @@ jobs:
       run: |
         pip install flake8
         flake8
+        
   clang-format-lint:
     runs-on: self-hosted
     name: clang-format
@@ -55,10 +57,12 @@ jobs:
       CC: 'gcc'
       PYTHON_VERSION: ${{matrix.python-version}}
       TOX_TESTENV_PASSENV: GITHUB_ACTIONS
+      
     steps:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
+        
       # Ubuntu / MacOS Testing
     - name: Install cocotb build dependencies (Ubuntu - g++)   
       run: |
